@@ -64,8 +64,73 @@ function addQuote() {
 // Event listener for showing a new quote
 document.getElementById('newQuote').addEventListener('click', showRandomQuote);  */
 
+const API_URL = 'https://jsonplaceholder.typicode.com/posts'; // Mock API URL
+
 // Initialize quotes array
 let quotes = [];
+
+// Fetch quotes from the mock API
+async function fetchQuotesFromServer() {
+    try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        
+        // Simulate server data structure
+        const newQuotes = data.map(item => ({
+            text: item.title, // Using title as a quote
+            category: item.userId % 3 === 0 ? 'Inspirational' : item.userId % 2 === 0 ? 'Life' : 'Motivational' // Random categories
+        }));
+
+        // Update quotes with server data
+        updateQuotes(newQuotes);
+    } catch (error) {
+        console.error('Error fetching quotes:', error);
+    }
+}
+
+// Update quotes with server data
+function updateQuotes(newQuotes) {
+    let updated = false;
+    
+    newQuotes.forEach(newQuote => {
+        const existingQuote = quotes.find(q => q.text === newQuote.text);
+        if (!existingQuote) {
+            quotes.push(newQuote); // Add new quote from server
+            updated = true;
+        }
+    });
+
+    if (updated) {
+        saveQuotes(); // Save updated quotes to local storage
+        notifyUser('New quotes added from server.');
+        populateCategories(); // Update categories dropdown
+        filterQuotes(); // Refresh displayed quotes
+    }
+    if (conflicts.length > 0) {
+        notifyUser(`Conflict detected for quotes: ${conflicts.join(', ')}`);
+    }
+}
+
+// Notify user of updates
+function notifyUser(message) {
+    const notification = document.createElement('div');
+    notification.textContent = message;
+    notification.style.position = 'fixed';
+    notification.style.top = '10px';
+    notification.style.right = '10px';
+    notification.style.backgroundColor = 'lightblue';
+    notification.style.padding = '10px';
+    notification.style.border = '1px solid #007BFF';
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000); // Remove notification after 3 seconds
+}
+
+// Periodically fetch new quotes
+setInterval(fetchQuotesFromServer, 10000); // Fetch every 10 seconds
+
 
 // Load quotes from local storage on startup
 function loadQuotes() {
@@ -201,6 +266,7 @@ document.getElementById('importFile').addEventListener('change', importFromJsonF
 loadQuotes();
 createAddQuoteForm();
 populateCategories();
+fetchQuotesFromServer(); // Initial fetch
 
 // Restore last selected category filter
 const lastSelectedCategory = localStorage.getItem('lastSelectedCategory') || 'all';

@@ -131,7 +131,26 @@ function notifyUser(message) {
 // Periodically fetch new quotes
 setInterval(fetchQuotesFromServer, 10000); // Fetch every 10 seconds
 
+async function postQuoteToServer(newQuote) {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: newQuote.text,
+                userId: newQuote.category === 'Inspirational' ? 1 : newQuote.category === 'Life' ? 2 : 3 // Simulated user ID
+            })
+        });
 
+        if (!response.ok) throw new Error('Network response was not ok');
+        const responseData = await response.json();
+        console.log('Quote posted successfully:', responseData);
+    } catch (error) {
+        console.error('Error posting quote:', error);
+    }
+}
 // Load quotes from local storage on startup
 function loadQuotes() {
     const storedQuotes = localStorage.getItem('quotes');
@@ -217,7 +236,7 @@ function createAddQuoteForm() {
 }
 
 // Function to add a new quote
-function addQuote() {
+async function addQuote() {
     const newQuoteText = document.getElementById('newQuoteText').value;
     const newQuoteCategory = document.getElementById('newQuoteCategory').value;
 
@@ -226,8 +245,12 @@ function addQuote() {
         return;
     }
 
-    quotes.push({ text: newQuoteText, category: newQuoteCategory });
-    saveQuotes(); // Save to local storage
+    const newQuote = { text: newQuoteText, category: newQuoteCategory };
+    
+    quotes.push(newQuote); // Add the new quote to local array
+    await postQuoteToServer(newQuote); // Post quote to server
+    saveQuotes(); // Save updated quotes to local storage
+    populateCategories(); // Update categories dropdown
     document.getElementById('newQuoteText').value = '';
     document.getElementById('newQuoteCategory').value = '';
     alert('Quote added successfully!');
@@ -252,6 +275,7 @@ function importFromJsonFile(event) {
         const importedQuotes = JSON.parse(event.target.result);
         quotes.push(...importedQuotes);
         saveQuotes(); // Save updated quotes to local storage
+        populateCategories();
         alert('Quotes imported successfully!');
     };
     fileReader.readAsText(event.target.files[0]);

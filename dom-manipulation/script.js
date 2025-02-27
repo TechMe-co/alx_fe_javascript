@@ -394,7 +394,7 @@ async function syncQuotes() {
         });
 
         saveQuotes(); // Save all quotes after syncing
-        notifyUser('Quotes synchronized with server.');
+        notifyUser('Quotes synced with server!'); // Notify user of successful sync
         populateCategories(); // Update categories dropdown
         filterQuotes(); // Refresh displayed quotes
     } catch (error) {

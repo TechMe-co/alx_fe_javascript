@@ -369,6 +369,39 @@ function updateQuotes(newQuotes) {
     }
 }
 
+// Sync local quotes with server quotes
+async function syncQuotes() {
+    try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+
+        // Simulate server data structure
+        const serverQuotes = data.map(item => ({
+            text: item.title,
+            category: item.userId % 3 === 0 ? 'Inspirational' : item.userId % 2 === 0 ? 'Life' : 'Motivational'
+        }));
+
+        // Compare with local quotes and resolve conflicts
+        serverQuotes.forEach(serverQuote => {
+            const existingQuote = quotes.find(q => q.text === serverQuote.text);
+            if (!existingQuote) {
+                quotes.push(serverQuote); // Add new quote from server
+            } else if (existingQuote.category !== serverQuote.category) {
+                // Conflict detected: Keep the server's quote
+                const index = quotes.indexOf(existingQuote);
+                quotes[index] = serverQuote; // Update with server data
+            }
+        });
+
+        saveQuotes(); // Save all quotes after syncing
+        notifyUser('Quotes synchronized with server.');
+        populateCategories(); // Update categories dropdown
+        filterQuotes(); // Refresh displayed quotes
+    } catch (error) {
+        console.error('Error syncing quotes:', error);
+    }
+}
+
 // Notify user of updates
 function notifyUser(message) {
     const notification = document.createElement('div');
@@ -386,8 +419,8 @@ function notifyUser(message) {
     }, 3000); // Remove notification after 3 seconds
 }
 
-// Periodically fetch new quotes
-setInterval(fetchQuotesFromServer, 10000); // Fetch every 10 seconds
+// Periodically fetch new quotes and sync
+setInterval(syncQuotes, 10000); // Sync every 10 seconds
 
 // Function to post a new quote to the mock API
 async function postQuoteToServer(newQuote) {
